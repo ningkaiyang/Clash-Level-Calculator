@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clash Level Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -11,8 +12,8 @@
     <header class="hero">
       <div>
         <p class="eyebrow">Clash Royale · Level 16 Update</p>
-        <h1>Level-up planner, now on the web.</h1>
-        <p class="lede">Run the optimizer with your own data or fetch a live snapshot from RoyaleAPI. Keep gems optional, reserve wild cards, and see exactly how much XP you can squeeze from your inventory.</p>
+        <h1>Level-up planner, now on the web. <span aria-hidden="true">👑</span></h1>
+        <p class="lede">Run the optimizer with your own data or fetch a live snapshot from RoyaleAPI. Allow gems optionally and get a gold-first, blue-royal plan for maximum XP.</p>
       </div>
       <div class="pill">Powered by Flask · Render-ready</div>
     </header>
@@ -67,7 +68,6 @@
             <input type="checkbox" name="infinite_gold" {% if settings.infinite_gold %}checked{% endif %}>
             <span>Ignore gold limits (card bottleneck mode)</span>
           </label>
-          <p class="hint">This app keeps a 10% wild-card buffer by default; remove the reserve in the CLI if you need to test alternatives.</p>
         </div>
       </form>
     </section>
@@ -79,23 +79,23 @@
           <h2>Plan summary</h2>
           <p class="hint">Based on the options you selected above.</p>
         </div>
-        <div class="pill">{{ result.actions|length }} upgrades planned</div>
+        <div class="pill pill--count">{{ result.actions|length }} upgrades planned</div>
       </header>
       <div class="summary-grid">
-        <div class="stat">
+        <div class="stat stat--king">
           <p class="label">Projected King Level</p>
           <p class="value">{{ result.final_profile.king_level }}</p>
           <p class="hint">+{{ "{:,}".format(result.final_profile.xp_into_level) }} XP into level</p>
         </div>
-        <div class="stat">
+        <div class="stat stat--xp">
           <p class="label">Total XP gained</p>
           <p class="value">{{ "{:,}".format(result.total_xp_gained) }}</p>
         </div>
-        <div class="stat">
+        <div class="stat stat--gold">
           <p class="label">Gold spent</p>
           <p class="value">{{ "{:,}".format(result.total_gold_spent) }}</p>
         </div>
-        <div class="stat">
+        <div class="stat stat--gems">
           <p class="label">Gems spent</p>
           <p class="value">{{ "{:,}".format(result.total_gems_used) }}</p>
         </div>
