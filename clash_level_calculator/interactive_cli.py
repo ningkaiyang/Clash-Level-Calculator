@@ -67,7 +67,7 @@ def load_snapshot(args: argparse.Namespace, player_tag: str, client: RoyaleAPICl
 def run_scenarios(player_data: PlayerData) -> List[Tuple[str, OptimizationResult]]:
     scenarios: List[Tuple[str, OptimizationSettings]] = [
         (
-            "All Resources (Gold + Gems + Cards)",
+            "All Resources (Gold + Gems + Cards) - Note: Gem Costs Are Estimates!",
             OptimizationSettings(use_gems=True, keep_wild_card_buffer=False),
         ),
         (

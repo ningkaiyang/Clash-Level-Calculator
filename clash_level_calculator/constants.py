@@ -130,7 +130,7 @@ EFFICIENCY_OVERRIDES: Dict[int, float] = {
 GEM_CARD_VALUES: Dict[str, float] = {
     "Common": 0.36,
     "Rare": 2.14,
-    "Epic": 21.67,
+    "Epic": 21.666666667,
     "Legendary": 210.0,
     "Champion": 400.0,
 }
