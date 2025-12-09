@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: clash-level-calculator
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn clash_level_calculator.web_app:app
+    autoDeploy: true
+    envVars:
+      - key: ROYALE_API_KEY
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false

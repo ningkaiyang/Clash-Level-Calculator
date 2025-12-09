@@ -2,6 +2,44 @@
 
 Python implementation of the Level 16 Update Optimization Engine. The tool ingests your current Clash Royale inventory and returns the most efficient upgrade sequence to maximize King Tower XP under the current economy as of December 9th, 2025. Created and maintained by Nickolas Yang (ningkaiyang on Discord and Clash Royale).
 
+## Web app (Flask)
+
+Run a lightweight web UI locally:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python -m clash_level_calculator.web_app
+# open http://localhost:5000
+```
+
+Features:
+
+- Paste `player.json` (same schema as below) or fetch a live snapshot via RoyaleAPI (`ROYALE_API_KEY` env var required for the latter).
+- Toggle gem usage, infinite-gold mode, wild-card reserve, and gem-to-gold penalty.
+- View a formatted upgrade table and projected King Level.
+
+## Deploy to Render (free tier)
+
+Render supports Python web services with `pip install` + `gunicorn`. This repo includes a `render.yaml` blueprint for one-click setup.
+
+### Option A: Use render.yaml (recommended)
+
+1. Push this branch to GitHub.
+2. In the Render Dashboard, click **New → Blueprint** and select your repo.
+3. Render will read `render.yaml` and propose a **Free** web service using `gunicorn clash_level_calculator.web_app:app`.
+4. Set environment variables as needed:
+	- `ROYALE_API_KEY` (optional) – enable live player fetches.
+	- `FLASK_SECRET_KEY` (optional) – session signing for Flask.
+5. Deploy. Render will run `pip install -r requirements.txt` and bind to `$PORT` automatically.
+
+### Option B: Manual Web Service setup
+
+1. New → Web Service → connect this repo/branch.
+2. Language: Python 3. Build command: `pip install -r requirements.txt`. Start command: `gunicorn clash_level_calculator.web_app:app`.
+3. Instance type: Free. Add the env vars above if you want RoyaleAPI support.
+4. Deploy; every push to this branch auto-redeploys.
+
 ## Quick start
 Set a CLash Royale Developer API Key in your runtime environment (like zshrc) or replace directly into the Python script at `./clash_level_calculator/clients/royale_api.py` (but make sure not to push this one into Git).
 

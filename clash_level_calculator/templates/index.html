@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clash Level Calculator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Clash Royale · Level 16 Update</p>
+        <h1>Level-up planner, now on the web.</h1>
+        <p class="lede">Run the optimizer with your own data or fetch a live snapshot from RoyaleAPI. Keep gems optional, reserve wild cards, and see exactly how much XP you can squeeze from your inventory.</p>
+      </div>
+      <div class="pill">Powered by Flask · Render-ready</div>
+    </header>
+
+    {% if errors %}
+    <section class="panel error">
+      <h2>Something went wrong</h2>
+      <ul>
+        {% for error in errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <section class="panel">
+      <form method="POST" class="form-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>Paste player JSON</h2>
+            <p class="hint">Matches the format in <code>examples/sample_player.json</code>.</p>
+          </div>
+          <textarea name="player_json" rows="18" spellcheck="false">{{ raw_json }}</textarea>
+          <div class="actions">
+            <button type="submit" name="source" value="json" class="primary">Optimize pasted JSON</button>
+            <button type="button" class="ghost" onclick="document.querySelector('textarea[name=player_json]').value = {{ sample_json|tojson }};">Load sample</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Or fetch from RoyaleAPI</h2>
+            <p class="hint">Requires the <code>ROYALE_API_KEY</code> env var to be set.</p>
+          </div>
+          <label class="field">
+            <span>Player tag</span>
+            <input type="text" name="player_tag" placeholder="#G2VV9802" value="{{ player_tag }}" autocomplete="off">
+          </label>
+          <div class="field-row">
+            <label class="field">
+              <span>Available gold</span>
+              <input type="text" name="gold" placeholder="450000" value="{{ gold_input }}">
+            </label>
+            <label class="field">
+              <span>Available gems</span>
+              <input type="text" name="gems" placeholder="800" value="{{ gems_input }}">
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit" name="source" value="api" class="secondary">Fetch + optimize</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Optimizer settings</h2>
+            <p class="hint">Toggle how aggressive the plan should be.</p>
+          </div>
+          <label class="checkbox">
+            <input type="checkbox" name="use_gems" {% if settings.use_gems %}checked{% endif %}>
+            <span>Allow spending gems for missing cards</span>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="infinite_gold" {% if settings.infinite_gold %}checked{% endif %}>
+            <span>Ignore gold limits (card bottleneck mode)</span>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="spend_wild_cards" {% if not settings.keep_wild_card_buffer %}checked{% endif %}>
+            <span>Spend all wild cards (disable 10% reserve)</span>
+          </label>
+          <label class="field">
+            <span>Gem-to-gold penalty</span>
+            <input type="number" step="1" min="0" name="gem_to_gold_ratio" value="{{ settings.gem_to_gold_ratio }}">
+            <p class="hint">Higher values make the optimizer avoid gem usage.</p>
+          </label>
+        </div>
+      </form>
+    </section>
+
+    {% if result %}
+    <section class="panel results">
+      <header class="card-header">
+        <div>
+          <h2>Plan summary</h2>
+          <p class="hint">Based on the options you selected above.</p>
+        </div>
+        <div class="pill">{{ result.actions|length }} upgrades planned</div>
+      </header>
+      <div class="summary-grid">
+        <div class="stat">
+          <p class="label">Projected King Level</p>
+          <p class="value">{{ result.final_profile.king_level }}</p>
+          <p class="hint">+{{ "{:,}".format(result.final_profile.xp_into_level) }} XP into level</p>
+        </div>
+        <div class="stat">
+          <p class="label">Total XP gained</p>
+          <p class="value">{{ "{:,}".format(result.total_xp_gained) }}</p>
+        </div>
+        <div class="stat">
+          <p class="label">Gold spent</p>
+          <p class="value">{{ "{:,}".format(result.total_gold_spent) }}</p>
+        </div>
+        <div class="stat">
+          <p class="label">Gems spent</p>
+          <p class="value">{{ "{:,}".format(result.total_gems_used) }}</p>
+        </div>
+      </div>
+
+      {% if result.actions %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Card</th>
+              <th>Rarity</th>
+              <th>From → To</th>
+              <th>Gold</th>
+              <th>Cards</th>
+              <th>Wild</th>
+              <th>Gems</th>
+              <th>XP</th>
+              <th>Gold/XP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for action in result.actions %}
+            <tr>
+              <td>{{ action.card_name }}</td>
+              <td>{{ action.rarity }}</td>
+              <td>{{ action.from_level }} → {{ action.to_level }}</td>
+              <td>{{ "{:,}".format(action.gold_cost) }}</td>
+              <td>{{ "{:,}".format(action.card_cost) }}</td>
+              <td>{{ "{:,}".format(action.wild_cards_used) }}</td>
+              <td>{{ "{:,}".format(action.gems_used) }}</td>
+              <td>{{ "{:,}".format(action.xp_gained) }}</td>
+              <td>{{ "{:.2f}".format(action.efficiency_ratio) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="empty">No upgrades available for this configuration.</p>
+      {% endif %}
+    </section>
+    {% endif %}
+  </main>
+</body>
+</html>
