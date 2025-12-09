@@ -1,21 +1,16 @@
 # Clash-Level-Calculator
 
-Python implementation of the Level 16 Optimization Engine described in `.github/copilot-instructions.md`. The tool ingests your current Clash Royale inventory and returns the most efficient upgrade sequence to maximize King Tower XP under the current economy.
+Python implementation of the Level 16 Update Optimization Engine. The tool ingests your current Clash Royale inventory and returns the most efficient upgrade sequence to maximize King Tower XP under the current economy as of December 9th, 2025. Created and maintained by Nickolas Yang (ningkaiyang on Discord and Clash Royale).
 
 ## Quick start
+Set a CLash Royale Developer API Key in your runtime environment (like zshrc) or replace directly into the Python script at `./clash_level_calculator/clients/royale_api.py` (but make sure not to push this one into Git).
 
+Then, just run:
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python -m clash_level_calculator.cli --player-data examples/sample_player.json
+python -m clash_level_calculator.cli
 ```
-
-Useful flags:
-
-- `--use-gems` – let the planner buy missing cards with gems (uses RoyaleAPI pricing table).
-- `--infinite-gold` – ignore gold costs and maximize XP per card (materials bottleneck mode).
-- `--no-wild-buffer` – spend all wild cards (default keeps a 10% emergency reserve).
-- `--gem-gold-ratio` – adjust the gold-equivalent penalty applied per gem when ranking upgrades.
 
 ## Player data format
 
@@ -46,7 +41,7 @@ Supply a JSON file containing the fields below (see `examples/sample_player.json
 
 To pull live data directly from the Clash Royale API:
 
-1. Create a `.env` file that sets `ROYALE_API_KEY=<your developer token>`.
+1. Create a `.env` file that sets `ROYALE_API_KEY=<your developer token>` or manually insert key into the `./clash_level_calculator/clients/royale_api.py` file.
 2. Run `python -m clash_level_calculator.interactive_cli`.
 3. Enter your player tag (e.g., `#G2VV9802`), your current Gold, and your Gems when prompted.
 
@@ -54,7 +49,7 @@ The script fetches only the necessary fields (King Level XP and the entire card 
 
 - **All Resources** – spends Gold + Gems + cards resourcefully.
 - **Gold + Cards Only** – keeps Gems untouched.
-- **Card Bottleneck (Infinite Gold)** – assumes unlimited Gold and shows the best XP-per-card ladder.
+- **Card Bottleneck (Infinite Gold)** – ignores Gold limits but preserves true gold costs/ratios so the ranking stays meaningful while only card copies remain the bottleneck.
 
 Wild Cards are intentionally ignored for this online workflow to keep the calculations faithful to the live collection data. For automated testing or offline demos you can supply a cached RoyaleAPI snapshot via `--offline-file examples/sample_player_snapshot.json` along with `--gold` and `--gems` arguments.
 

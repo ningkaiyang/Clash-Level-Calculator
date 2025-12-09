@@ -53,6 +53,7 @@ class Level16Optimizer:
         self.actions: List[UpgradeAction] = []
         self._initial_gold = self.inventory.gold
         self._initial_gems = self.inventory.gems
+        self._gold_spent = 0
         self._xp_total = (
             self.game_data.total_xp_for_level(player_data.profile.king_level)
             + player_data.profile.xp_into_level
@@ -84,7 +85,7 @@ class Level16Optimizer:
             ),
             final_gold=self.inventory.gold,
             final_gems=self.inventory.gems,
-            total_gold_spent=self._initial_gold - self.inventory.gold,
+            total_gold_spent=self._gold_spent,
             total_wild_cards_used=self._wild_usage,
             total_gems_used=self._total_gems_used,
         )
@@ -98,16 +99,10 @@ class Level16Optimizer:
             if best is None:
                 best = candidate
                 continue
-            if self.settings.infinite_gold:
-                if candidate.material_efficiency > best.material_efficiency:
-                    best = candidate
-                elif candidate.material_efficiency == best.material_efficiency and candidate.xp_gained > best.xp_gained:
-                    best = candidate
-            else:
-                if candidate.efficiency_ratio < best.efficiency_ratio:
-                    best = candidate
-                elif candidate.efficiency_ratio == best.efficiency_ratio and candidate.xp_gained > best.xp_gained:
-                    best = candidate
+            if candidate.efficiency_ratio < best.efficiency_ratio:
+                best = candidate
+            elif candidate.efficiency_ratio == best.efficiency_ratio and candidate.xp_gained > best.xp_gained:
+                best = candidate
         return best
 
     def _build_candidate(self, index: int, card: Card) -> Optional[UpgradeCandidate]:
@@ -153,7 +148,7 @@ class Level16Optimizer:
             card=card,
             from_level=card.level,
             to_level=next_level,
-            gold_cost=0 if self.settings.infinite_gold else gold_cost,
+            gold_cost=gold_cost,
             cards_required=cards_required,
             cards_used=cards_used,
             wild_cards_used=wild_used,
@@ -176,11 +171,8 @@ class Level16Optimizer:
         gems_used: int,
     ) -> float:
         override = self.game_data.get_efficiency_override(target_level)
-        if override is not None and not self.settings.infinite_gold:
+        if override is not None:
             return override
-
-        if self.settings.infinite_gold:
-            return cards_required / xp_gain if xp_gain else 0
 
         denominator = xp_gain or 1
         gem_penalty = gems_used * self.settings.gem_to_gold_ratio
@@ -197,6 +189,7 @@ class Level16Optimizer:
         self.inventory.wild_cards[card.rarity] -= candidate.wild_cards_used
         self._wild_usage[card.rarity] += candidate.wild_cards_used
         self._total_gems_used += candidate.gems_used
+        self._gold_spent += candidate.gold_cost
 
         self._xp_total += candidate.xp_gained
 
