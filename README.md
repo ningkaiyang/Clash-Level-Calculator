@@ -40,7 +40,23 @@ Supply a JSON file containing the fields below (see `examples/sample_player.json
 - `clash_level_calculator/constants.py` – single source of truth for gold costs, XP tables, gem values, and card material requirements.
 - `clash_level_calculator/optimizer.py` – greedy engine that prioritizes Level 16/15 upgrades, recursively requeueing follow-up upgrades as resources allow.
 - `clash_level_calculator/catalog.py` + `data/cards.json` – RoyaleAPI card metadata to validate names/rarities and keep the dataset in sync with the live game.
-- `clash_level_calculator/clients/royale_api.py` – stubbed client showing where to plug in a Clash Royale Developer Key for automatic profile pulls in the next iteration.
+- `clash_level_calculator/clients/royale_api.py` – fully wired RoyaleAPI client ready for use with a Developer Key.
+
+## Interactive RoyaleAPI workflow
+
+To pull live data directly from the Clash Royale API:
+
+1. Create a `.env` file that sets `ROYALE_API_KEY=<your developer token>`.
+2. Run `python -m clash_level_calculator.interactive_cli`.
+3. Enter your player tag (e.g., `#G2VV9802`), your current Gold, and your Gems when prompted.
+
+The script fetches only the necessary fields (King Level XP and the entire card collection), then outputs three ranked upgrade paths:
+
+- **All Resources** – spends Gold + Gems + cards resourcefully.
+- **Gold + Cards Only** – keeps Gems untouched.
+- **Card Bottleneck (Infinite Gold)** – assumes unlimited Gold and shows the best XP-per-card ladder.
+
+Wild Cards are intentionally ignored for this online workflow to keep the calculations faithful to the live collection data. For automated testing or offline demos you can supply a cached RoyaleAPI snapshot via `--offline-file examples/sample_player_snapshot.json` along with `--gold` and `--gems` arguments.
 
 ## Future API integration
 

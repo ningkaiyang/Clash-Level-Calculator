@@ -1,5 +1,5 @@
-"""Client stubs for integrating with external Clash Royale APIs."""
+"""Client utilities for integrating with external Clash Royale APIs."""
 
-from .royale_api import RoyaleAPIClient
+from .royale_api import RoyaleAPIClient, RoyaleAPIError
 
-__all__ = ["RoyaleAPIClient"]
+__all__ = ["RoyaleAPIClient", "RoyaleAPIError"]
