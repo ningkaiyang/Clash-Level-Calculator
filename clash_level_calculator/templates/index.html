@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clash Level Calculator</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -51,7 +51,7 @@
             </label>
           </div>
           <div class="actions">
-            <button type="submit" class="secondary">Fetch + optimize</button>
+            <button type="submit" class="btn-clash">Fetch + optimize</button>
           </div>
         </div>
 
@@ -74,7 +74,7 @@
 
     {% if result %}
     <section class="panel results">
-      <header class="card-header">
+      <header class="results-header">
         <div>
           <h2>Plan summary</h2>
           <p class="hint">Based on the options you selected above.</p>
@@ -82,22 +82,26 @@
         <div class="pill pill--count">{{ result.actions|length }} upgrades planned</div>
       </header>
       <div class="summary-grid">
-        <div class="stat stat--king">
-          <p class="label">Projected King Level</p>
-          <p class="value">{{ result.final_profile.king_level }}</p>
-          <p class="hint">+{{ "{:,}".format(result.final_profile.xp_into_level) }} XP into level</p>
+        <div class="stat-card">
+          <span class="stat-icon">👑</span>
+          <p class="stat-label">Projected King</p>
+          <p class="stat-value">{{ result.final_profile.king_level }}</p>
+          <p class="stat-hint">+{{ "{:,}".format(result.final_profile.xp_into_level) }} XP</p>
         </div>
-        <div class="stat stat--xp">
-          <p class="label">Total XP gained</p>
-          <p class="value">{{ "{:,}".format(result.total_xp_gained) }}</p>
+        <div class="stat-card">
+          <span class="stat-icon">✨</span>
+          <p class="stat-label">Total XP</p>
+          <p class="stat-value">{{ "{:,}".format(result.total_xp_gained) }}</p>
         </div>
-        <div class="stat stat--gold">
-          <p class="label">Gold spent</p>
-          <p class="value">{{ "{:,}".format(result.total_gold_spent) }}</p>
+        <div class="stat-card">
+          <span class="stat-icon">🟡</span>
+          <p class="stat-label">Gold Spent</p>
+          <p class="stat-value">{{ "{:,}".format(result.total_gold_spent) }}</p>
         </div>
-        <div class="stat stat--gems">
-          <p class="label">Gems spent</p>
-          <p class="value">{{ "{:,}".format(result.total_gems_used) }}</p>
+        <div class="stat-card">
+          <span class="stat-icon">💎</span>
+          <p class="stat-label">Gems Spent</p>
+          <p class="stat-value">{{ "{:,}".format(result.total_gems_used) }}</p>
         </div>
       </div>
 
@@ -119,16 +123,16 @@
           </thead>
           <tbody>
             {% for action in result.actions %}
-            <tr>
+            <tr class="row-{{ action.rarity|lower }}">
               <td>{{ action.card_name }}</td>
-              <td>{{ action.rarity }}</td>
+              <td><span class="rarity-badge badge-{{ action.rarity|lower }}">{{ action.rarity }}</span></td>
               <td>{{ action.from_level }} → {{ action.to_level }}</td>
               <td>{{ "{:,}".format(action.gold_cost) }}</td>
               <td>{{ "{:,}".format(action.card_cost) }}</td>
               <td>{{ "{:,}".format(action.wild_cards_used) }}</td>
               <td>{{ "{:,}".format(action.gems_used) }}</td>
               <td>{{ "{:,}".format(action.xp_gained) }}</td>
-              <td>{{ "{:.2f}".format(action.efficiency_ratio) }}</td>
+              <td class="{% if action.efficiency_ratio < 10 %}efficiency-good{% endif %}">{{ "{:.2f}".format(action.efficiency_ratio) }}</td>
             </tr>
             {% endfor %}
           </tbody>
