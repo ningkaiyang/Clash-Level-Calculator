@@ -28,20 +28,24 @@ Render supports Python web services with `pip install` + `gunicorn`. This repo i
 1. Push this branch to GitHub.
 2. In the Render Dashboard, click **New → Blueprint** and select your repo.
 3. Render will read `render.yaml` and propose a **Free** web service using `gunicorn clash_level_calculator.web_app:app`.
-4. Set environment variables as needed:
-	- `ROYALE_API_KEY` (optional) – enable live player fetches.
+4. Create a Clash Royale Developer API key and whitelist the RoyaleAPI proxy IP: `45.79.218.79`.
+5. Set environment variables as needed:
+	- `ROYALE_API_KEY` (required for live player fetches) – your developer token tied to the whitelisted IP above.
 	- `FLASK_SECRET_KEY` (optional) – session signing for Flask.
-5. Deploy. Render will run `pip install -r requirements.txt` and bind the service to the port specified by the `PORT` environment variable.
+	- `ROYALE_API_BASE_URL` (optional) – override the default `https://proxy.royaleapi.dev/v1` base if you want to target the official API directly.
+6. Deploy. Render will run `pip install -r requirements.txt` and bind the service to the port specified by the `PORT` environment variable.
 
 ### Option B: Manual Web Service setup
 
 1. New → Web Service → connect this repo/branch.
 2. Language: Python 3. Build command: `pip install -r requirements.txt`. Start command: `gunicorn --bind 0.0.0.0:$PORT clash_level_calculator.web_app:app`.
-3. Instance type: Free. Add the env vars above if you want RoyaleAPI support. Consider setting a health check path under Advanced → Health Check Path (e.g., `/health`) to let Render verify the service is healthy.
-4. Deploy; every push to this branch auto-redeploys.
+3. Whitelist `45.79.218.79` when creating your Clash Royale developer key; set `ROYALE_API_KEY` in Render.
+4. (Optional) Set `ROYALE_API_BASE_URL` if you need to point at the official API instead of the RoyaleAPI proxy.
+5. Instance type: Free. Add the env vars above if you want RoyaleAPI support. Consider setting a health check path under Advanced → Health Check Path (e.g., `/health`) to let Render verify the service is healthy.
+6. Deploy; every push to this branch auto-redeploys.
 
 ## Quick start
-Set a Clash Royale Developer API Key in your runtime environment (like zshrc) or replace directly into the Python script at `./clash_level_calculator/clients/royale_api.py` (but make sure not to push this one into Git).
+Set a Clash Royale Developer API Key in your runtime environment (like zshrc) after whitelisting the RoyaleAPI proxy IP `45.79.218.79` when creating the key. The client uses `https://proxy.royaleapi.dev/v1` by default so no additional egress proxy is required. To hit the official API instead, export `ROYALE_API_BASE_URL=https://api.clashroyale.com/v1`.
 
 Then, just run:
 ```bash

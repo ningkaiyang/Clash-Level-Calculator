@@ -14,9 +14,14 @@ class RoyaleAPIError(RuntimeError):
 
 
 class RoyaleAPIClient:
-    """Minimal wrapper around the official Clash Royale API (via RoyaleAPI)."""
+    """Minimal wrapper around the Clash Royale API.
 
-    BASE_URL = "https://api.clashroyale.com/v1"
+    Defaults to the RoyaleAPI proxy so outbound requests originate from a
+    whitelisted static IP (45.79.218.79). Override with ROYALE_API_BASE_URL
+    or the base_url constructor arg to target the official API directly.
+    """
+
+    BASE_URL = "https://proxy.royaleapi.dev/v1"
 
     def __init__(
         self,
@@ -25,7 +30,7 @@ class RoyaleAPIClient:
         session: Optional[requests.Session] = None,
     ) -> None:
         self.api_key = api_key or os.getenv("ROYALE_API_KEY")
-        self.base_url = base_url or self.BASE_URL
+        self.base_url = base_url or os.getenv("ROYALE_API_BASE_URL") or self.BASE_URL
         self.session = session or requests.Session()
 
     def fetch_player_snapshot(self, player_tag: str) -> Dict[str, Any]:
@@ -55,7 +60,9 @@ class RoyaleAPIClient:
         if response.status_code == 404:
             raise RoyaleAPIError(f"Player {normalized_tag} was not found. Double-check the tag.")
         if response.status_code == 403:
-            raise RoyaleAPIError("Access to RoyaleAPI was denied. Verify that your Developer Key is valid.")
+            raise RoyaleAPIError(
+                "Access to RoyaleAPI was denied. Verify that your Developer Key is valid and whitelisted for IP 45.79.218.79."
+            )
         if not response.ok:
             raise RoyaleAPIError(
                 f"RoyaleAPI request failed with status {response.status_code}: {response.text.strip()}"
