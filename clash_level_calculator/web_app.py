@@ -34,16 +34,10 @@ def _parse_settings(form_data: Dict[str, str]) -> OptimizationSettings:
 # JSON paste support removed: web UI only allows RoyaleAPI lookup for live data
 
 
-def _player_data_from_api(form_data: Dict[str, str]) -> PlayerData:
+def _player_data_from_api(form_data: Dict[str, str], gold: int, gems: int) -> PlayerData:
     tag = (form_data.get("player_tag") or "").strip().upper()
     if not tag:
         raise ValueError("Player tag is required when using RoyaleAPI.")
-
-    try:
-        gold = int(form_data.get("gold", "0").replace(",", ""))
-        gems = int(form_data.get("gems", "0").replace(",", ""))
-    except ValueError as exc:
-        raise ValueError("Gold and Gems must be whole numbers.") from exc
 
     client = RoyaleAPIClient()
     snapshot = client.fetch_player_snapshot(tag)
@@ -77,9 +71,14 @@ def index():  # type: ignore[override]
     if request.method == "POST":
         settings = _parse_settings(request.form)
         try:
-            player_data = _player_data_from_api(request.form)
+            gold = int(gold_input.replace(",", "")) if gold_input.strip() else 0
+            gems = int(gems_input.replace(",", "")) if gems_input.strip() else 0
+            player_data = _player_data_from_api(request.form, gold, gems)
 
             result = _run_optimizer(player_data, settings)
+            # Autofill inputs with parsed values
+            gold_input = str(gold)
+            gems_input = str(gems)
         except (ValueError, ValidationError, RoyaleAPIError) as exc:
             errors.append(str(exc))
 
