@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Dict, Optional
 
+import requests
+
 
 class CardCatalog:
     """Provides metadata lookups for cards using RoyaleAPI's dataset."""
@@ -13,9 +15,17 @@ class CardCatalog:
     def __init__(self, data_path: Optional[Path] = None) -> None:
         if data_path is None:
             data_path = Path(__file__).resolve().parent.parent / "data" / "cards.json"
-        self.data_path = data_path
-        with data_path.open("r", encoding="utf-8") as source:
-            self.cards = json.load(source)
+        
+        # Try to fetch live data from RoyaleAPI
+        live_url = "https://royaleapi.github.io/cr-api-data/json/cards.json"
+        try:
+            response = requests.get(live_url, timeout=10)
+            response.raise_for_status()
+            self.cards = response.json()
+        except (requests.RequestException, ValueError):
+            # Fallback to local data if fetch fails
+            with data_path.open("r", encoding="utf-8") as source:
+                self.cards = json.load(source)
 
         self._by_name = {entry["name"].lower(): entry for entry in self.cards}
         self._by_key = {entry["key"].lower(): entry for entry in self.cards}
