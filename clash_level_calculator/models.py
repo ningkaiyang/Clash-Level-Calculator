@@ -38,7 +38,6 @@ class OptimizationSettings(BaseModel):
     use_gems: bool = False
     infinite_gold: bool = False
     keep_wild_card_buffer: bool = True
-    gem_to_gold_ratio: float = 125.0
 
 
 class UpgradeAction(BaseModel):

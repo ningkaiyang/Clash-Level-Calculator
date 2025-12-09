@@ -32,20 +32,8 @@
       <form method="POST" class="form-grid">
         <div class="card">
           <div class="card-header">
-            <h2>Paste player JSON</h2>
-            <p class="hint">Matches the format in <code>examples/sample_player.json</code>.</p>
-          </div>
-          <textarea name="player_json" rows="18" spellcheck="false">{{ raw_json }}</textarea>
-          <div class="actions">
-            <button type="submit" name="source" value="json" class="primary">Optimize pasted JSON</button>
-            <button type="button" class="ghost" onclick="document.querySelector('textarea[name=player_json]').value = {{ sample_json|tojson }};">Load sample</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h2>Or fetch from RoyaleAPI</h2>
-            <p class="hint">Requires the <code>ROYALE_API_KEY</code> env var to be set.</p>
+            <h2>Fetch player snapshot</h2>
+            <p class="hint">RoyaleAPI lookup requires <code>ROYALE_API_KEY</code> set on the server.</p>
           </div>
           <label class="field">
             <span>Player tag</span>
@@ -62,7 +50,7 @@
             </label>
           </div>
           <div class="actions">
-            <button type="submit" name="source" value="api" class="secondary">Fetch + optimize</button>
+            <button type="submit" class="secondary">Fetch + optimize</button>
           </div>
         </div>
 
@@ -79,15 +67,7 @@
             <input type="checkbox" name="infinite_gold" {% if settings.infinite_gold %}checked{% endif %}>
             <span>Ignore gold limits (card bottleneck mode)</span>
           </label>
-          <label class="checkbox">
-            <input type="checkbox" name="spend_wild_cards" {% if not settings.keep_wild_card_buffer %}checked{% endif %}>
-            <span>Spend all wild cards (disable 10% reserve)</span>
-          </label>
-          <label class="field">
-            <span>Gem-to-gold penalty</span>
-            <input type="number" step="1" min="0" name="gem_to_gold_ratio" value="{{ settings.gem_to_gold_ratio }}">
-            <p class="hint">Higher values make the optimizer avoid gem usage.</p>
-          </label>
+          <p class="hint">This app keeps a 10% wild-card buffer by default; remove the reserve in the CLI if you need to test alternatives.</p>
         </div>
       </form>
     </section>

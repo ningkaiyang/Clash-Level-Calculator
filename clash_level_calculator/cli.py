@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
         "--gem-gold-ratio",
         type=float,
         default=125.0,
-        help="Gold-equivalent penalty per gem when ranking upgrades (default: 125)",
+        help=argparse.SUPPRESS,
     )
     return parser.parse_args()
 
@@ -43,7 +43,6 @@ def main() -> None:
         use_gems=args.use_gems,
         infinite_gold=args.infinite_gold,
         keep_wild_card_buffer=not args.no_wild_buffer,
-        gem_to_gold_ratio=args.gem_gold_ratio,
     )
 
     optimizer = Level16Optimizer(player_data, settings=settings)

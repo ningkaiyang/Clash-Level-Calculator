@@ -10,13 +10,13 @@ Run a lightweight web UI locally:
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m clash_level_calculator.web_app
-# open http://localhost:5000
+# open http://localhost:4000
 ```
 
 Features:
 
-- Paste `player.json` (same schema as below) or fetch a live snapshot via RoyaleAPI (`ROYALE_API_KEY` env var required for the latter).
-- Toggle gem usage, infinite-gold mode, wild-card reserve, and gem-to-gold penalty.
+- Fetch a live snapshot via RoyaleAPI (`ROYALE_API_KEY` env var required).
+- Toggle gem usage and infinite-gold mode; the UI keeps a 10% wild-card buffer by default.
 - View a formatted upgrade table and projected King Level.
 
 ## Deploy to Render (free tier)

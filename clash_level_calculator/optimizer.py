@@ -175,8 +175,8 @@ class Level16Optimizer:
             return override
 
         denominator = xp_gain or 1
-        gem_penalty = gems_used * self.settings.gem_to_gold_ratio
-        return (gold_cost + gem_penalty) / denominator
+        # Gems are a separate currency and not converted to gold; do not penalize gem usage scaled with gold, just in general.
+        return (gold_cost + gems_used) / denominator
 
     def _commit_candidate(self, candidate: UpgradeCandidate) -> None:
         card = self.cards[candidate.index]
