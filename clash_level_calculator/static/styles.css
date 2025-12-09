@@ -13,8 +13,8 @@
   --common: #3894b5;
   --rare: #f29626;
   --epic: #d35bf2;
-  --legendary: #35f0d0;
-  --champion: #fcd04b;
+  --legendary: #fcd04b;
+  --champion: #35f0d0;
   
   /* Resources */
   --gold: #ffd700;
@@ -299,8 +299,8 @@ tr:last-child td { border-bottom: none; }
 .badge-common { background: var(--common); }
 .badge-rare { background: var(--rare); }
 .badge-epic { background: var(--epic); }
-.badge-legendary { background: linear-gradient(135deg, var(--legendary), #29b6f6); }
-.badge-champion { background: var(--champion); color: #78350f; text-shadow: none; }
+.badge-legendary { background: var(--legendary); color: #78350f; text-shadow: none; }
+.badge-champion { background: linear-gradient(135deg, var(--champion), #29b6f6); }
 
 /* Row Borders for Rarity */
 tr.row-common { border-left: 4px solid var(--common); }
