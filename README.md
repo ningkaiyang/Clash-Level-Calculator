@@ -31,17 +31,17 @@ Render supports Python web services with `pip install` + `gunicorn`. This repo i
 4. Set environment variables as needed:
 	- `ROYALE_API_KEY` (optional) – enable live player fetches.
 	- `FLASK_SECRET_KEY` (optional) – session signing for Flask.
-5. Deploy. Render will run `pip install -r requirements.txt` and bind to `$PORT` automatically.
+5. Deploy. Render will run `pip install -r requirements.txt` and bind the service to the port specified by the `PORT` environment variable.
 
 ### Option B: Manual Web Service setup
 
 1. New → Web Service → connect this repo/branch.
-2. Language: Python 3. Build command: `pip install -r requirements.txt`. Start command: `gunicorn clash_level_calculator.web_app:app`.
-3. Instance type: Free. Add the env vars above if you want RoyaleAPI support.
+2. Language: Python 3. Build command: `pip install -r requirements.txt`. Start command: `gunicorn --bind 0.0.0.0:$PORT clash_level_calculator.web_app:app`.
+3. Instance type: Free. Add the env vars above if you want RoyaleAPI support. Consider setting a health check path under Advanced → Health Check Path (e.g., `/health`) to let Render verify the service is healthy.
 4. Deploy; every push to this branch auto-redeploys.
 
 ## Quick start
-Set a CLash Royale Developer API Key in your runtime environment (like zshrc) or replace directly into the Python script at `./clash_level_calculator/clients/royale_api.py` (but make sure not to push this one into Git).
+Set a Clash Royale Developer API Key in your runtime environment (like zshrc) or replace directly into the Python script at `./clash_level_calculator/clients/royale_api.py` (but make sure not to push this one into Git).
 
 Then, just run:
 ```bash

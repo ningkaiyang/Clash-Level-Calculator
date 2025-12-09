@@ -94,5 +94,11 @@ def index():  # type: ignore[override]
     )
 
 
+@app.route("/health")
+def health():
+    # Simple health check for Render or other load balancers
+    return {"status": "ok"}, 200
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "4000")), debug=True)
