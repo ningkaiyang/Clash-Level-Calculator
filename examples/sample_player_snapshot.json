@@ -2,14 +2,14 @@
   "tag": "#G2VV9802",
   "name": "Sample Player",
   "expLevel": 52,
-  "expPoints": 4688770,
+  "expPoints": 12000,
   "cards": [
     {"name": "Knight", "rarity": "Common", "level": 14, "count": 4000},
-    {"name": "Archer Queen", "rarity": "Champion", "level": 14, "count": 5},
-    {"name": "Golden Knight", "rarity": "Champion", "level": 13, "count": 7},
-    {"name": "Hog Rider", "rarity": "Rare", "level": 13, "count": 900},
-    {"name": "Fireball", "rarity": "Rare", "level": 13, "count": 650},
-    {"name": "Phoenix", "rarity": "Legendary", "level": 13, "count": 12},
+    {"name": "Archer Queen", "rarity": "Champion", "level": 4, "count": 5},
+    {"name": "Golden Knight", "rarity": "Champion", "level": 3, "count": 7},
+    {"name": "Hog Rider", "rarity": "Rare", "level": 11, "count": 900},
+    {"name": "Fireball", "rarity": "Rare", "level": 11, "count": 650},
+    {"name": "Phoenix", "rarity": "Legendary", "level": 5, "count": 12},
     {"name": "Electro Spirit", "rarity": "Common", "level": 12, "count": 1200}
   ]
 }

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from .constants import CARD_LEVEL_CAP, CARD_RARITIES
+from .constants import CARD_LEVEL_CAP, CARD_RARITIES, CARD_RARITY_START_LEVELS
 from .game_data import GameData
 from .models import Card, Inventory, PlayerData, PlayerProfile
 
@@ -13,12 +13,23 @@ def player_data_from_snapshot(snapshot: Dict[str, Any], gold: int, gems: int) ->
     game_data = GameData()
 
     try:
-        total_xp = int(snapshot.get("expPoints"))
+        king_level = int(snapshot.get("expLevel"))
     except (TypeError, ValueError) as exc:  # pragma: no cover - defensive
-        raise ValueError("RoyaleAPI snapshot is missing the 'expPoints' field") from exc
+        raise ValueError("RoyaleAPI snapshot is missing the 'expLevel' field") from exc
 
-    progress = game_data.king_progress_from_total_xp(total_xp)
-    profile = PlayerProfile(king_level=progress.level, xp_into_level=progress.xp_into_level)
+    king_cap = game_data.king_levels[-1]["level"]
+    king_level = max(1, min(king_level, king_cap))
+
+    try:
+        xp_into_level = int(snapshot.get("expPoints") or 0)
+    except (TypeError, ValueError):
+        xp_into_level = 0
+
+    xp_row = next((row for row in game_data.king_levels if row["level"] == king_level), None)
+    xp_to_next = xp_row.get("xp_to_next") if xp_row else 0
+    xp_into_level = max(0, min(xp_into_level, xp_to_next or 0))
+
+    profile = PlayerProfile(king_level=king_level, xp_into_level=xp_into_level)
 
     cards: List[Card] = []
     for entry in snapshot.get("cards", []):
@@ -33,6 +44,9 @@ def player_data_from_snapshot(snapshot: Dict[str, Any], gold: int, gems: int) ->
             parsed_level = int(level)
         except (TypeError, ValueError):
             continue
+
+        offset = CARD_RARITY_START_LEVELS.get(normalized_rarity, 1) - 1
+        parsed_level = parsed_level + offset
         parsed_level = max(1, min(parsed_level, CARD_LEVEL_CAP))
 
         count_raw = entry.get("count", 0)

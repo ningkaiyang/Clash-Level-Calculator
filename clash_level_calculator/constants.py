@@ -15,6 +15,14 @@ CARD_RARITIES: List[str] = [
     "Champion",
 ]
 
+CARD_RARITY_START_LEVELS: Dict[str, int] = {
+    "Common": 1,
+    "Rare": 3,
+    "Epic": 6,
+    "Legendary": 9,
+    "Champion": 11,
+}
+
 CARD_MATERIAL_REQUIREMENTS: Dict[str, Dict[int, int]] = {
     "Common": {
         2: 2,
@@ -49,11 +57,10 @@ CARD_MATERIAL_REQUIREMENTS: Dict[str, Dict[int, int]] = {
         16: 1400,
     },
     "Epic": {
-        6: 2,
-        7: 4,
-        8: 10,
-        9: 20,
-        10: 40,
+        7: 2,
+        8: 4,
+        9: 10,
+        10: 20,
         11: 30,
         12: 50,
         13: 70,
@@ -62,8 +69,7 @@ CARD_MATERIAL_REQUIREMENTS: Dict[str, Dict[int, int]] = {
         16: 180,
     },
     "Legendary": {
-        9: 2,
-        10: 4,
+        10: 2,
         11: 4,
         12: 6,
         13: 9,
@@ -72,7 +78,6 @@ CARD_MATERIAL_REQUIREMENTS: Dict[str, Dict[int, int]] = {
         16: 20,
     },
     "Champion": {
-        11: 1,
         12: 2,
         13: 5,
         14: 8,
