@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .constants import CARD_LEVEL_CAP, CARD_RARITIES, CARD_RARITY_START_LEVELS
 from .game_data import GameData
 from .models import Card, Inventory, PlayerData, PlayerProfile
 
 
-def player_data_from_snapshot(snapshot: Dict[str, Any], gold: int, gems: int) -> PlayerData:
+def player_data_from_snapshot(
+    snapshot: Dict[str, Any],
+    gold: int,
+    gems: int,
+    wild_cards: Optional[Dict[str, int]] = None,
+) -> PlayerData:
     game_data = GameData()
 
     try:
@@ -67,10 +72,13 @@ def player_data_from_snapshot(snapshot: Dict[str, Any], gold: int, gems: int) ->
     if not cards:
         raise ValueError("RoyaleAPI snapshot did not include any cards to optimize")
 
+    if wild_cards is None:
+        wild_cards = {rarity: 0 for rarity in CARD_RARITIES}
+
     inventory = Inventory(
         gold=gold,
         gems=gems,
-        wild_cards={rarity: 0 for rarity in CARD_RARITIES},
+        wild_cards=wild_cards,
     )
 
     return PlayerData(profile=profile, inventory=inventory, cards=cards)

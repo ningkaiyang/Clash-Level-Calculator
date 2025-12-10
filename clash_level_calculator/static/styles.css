@@ -172,6 +172,26 @@ input:focus {
 }
 .checkbox input { width: 20px; height: 20px; accent-color: var(--accent); }
 
+.field-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.wild-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wild-grid__inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
 /* Buttons - Supercell Style */
 .actions { margin-top: 8px; }
 

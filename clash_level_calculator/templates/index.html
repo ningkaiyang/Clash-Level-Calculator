@@ -50,6 +50,31 @@
               <input type="text" name="gems" placeholder="800" value="{{ gems_input }}">
             </label>
           </div>
+          <div class="wild-grid">
+            <label class="field-label">Wild Cards</label>
+            <div class="wild-grid__inputs">
+              <label class="field">
+                <span>Common</span>
+                <input type="text" name="wild_common" placeholder="0" value="{{ wild_cards_input.common }}">
+              </label>
+              <label class="field">
+                <span>Rare</span>
+                <input type="text" name="wild_rare" placeholder="0" value="{{ wild_cards_input.rare }}">
+              </label>
+              <label class="field">
+                <span>Epic</span>
+                <input type="text" name="wild_epic" placeholder="0" value="{{ wild_cards_input.epic }}">
+              </label>
+              <label class="field">
+                <span>Legendary</span>
+                <input type="text" name="wild_legendary" placeholder="0" value="{{ wild_cards_input.legendary }}">
+              </label>
+              <label class="field">
+                <span>Champion</span>
+                <input type="text" name="wild_champion" placeholder="0" value="{{ wild_cards_input.champion }}">
+              </label>
+            </div>
+          </div>
           <div class="actions">
             <button type="submit" class="btn-clash">Fetch + optimize</button>
           </div>
