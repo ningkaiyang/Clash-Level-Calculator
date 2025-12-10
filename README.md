@@ -1,6 +1,6 @@
 # Clash-Level-Calculator
 
-Python implementation of the Level 16 Update Optimization Engine. The tool ingests your current Clash Royale inventory and returns the most efficient upgrade sequence to maximize King Tower XP under the current economy as of December 9th, 2025. Created and maintained by Nickolas Yang (ningkaiyang on Discord and Clash Royale).
+Python implementation of the Level 16 Update Optimization Engine. The tool ingests your current Clash Royale inventory and returns the most efficient upgrade sequence to maximize King Tower XP under the current economy as of December 9th, 2025. Created and maintained by Nickolas Yang (ningkaiyang on Discord and Clash Royale). Hosted at https://clash-level-calculator.onrender.com.
 
 ## Web app (Flask)
 
