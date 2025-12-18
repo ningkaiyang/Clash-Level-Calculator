@@ -281,20 +281,68 @@ def find_min_gold_path(
     """
     Find the upgrade path that uses the minimum amount of gold to reach the target king level.
     
-    Runs the optimizer with infinite gold and no gems, finding the gold-only path.
+    Uses an iterative approach: start with unlimited gold, then try with (gold_spent - 1)
+    repeatedly until we can no longer reach the target level.
+    This may use more gems to compensate for less gold.
     """
     gd = game_data or GameData()
     
-    # Use infinite gold mode, no gems
-    settings = OptimizationSettings(use_gems=False, infinite_gold=True)
+    # Start with a very high gold limit (effectively unlimited)
+    current_gold_limit = 100_000_000
+    best_result: Optional[OptimizationResult] = None
     
-    optimizer = MinCostToKingLevelOptimizer(
-        player_data,
-        settings=settings,
-        game_data=gd,
-        target_king_level=target_king_level,
-    )
-    return optimizer.generate_plan()
+    while True:
+        # Create settings with gems allowed and current gold limit
+        settings = OptimizationSettings(use_gems=True, infinite_gold=False)
+        
+        # Create player data copy with current gold limit and unlimited gems
+        player_copy = player_data.model_copy(deep=True)
+        player_copy.inventory.gold = current_gold_limit
+        player_copy.inventory.gems = 10_000_000  # Unlimited gems
+        
+        optimizer = MinCostToKingLevelOptimizer(
+            player_copy,
+            settings=settings,
+            game_data=gd,
+            target_king_level=target_king_level,
+        )
+        result = optimizer.generate_plan()
+        
+        # Check if we reached the target
+        if result.final_profile.king_level >= target_king_level:
+            best_result = result
+            
+            # If no gold used, we found the minimum (0)
+            if result.total_gold_spent == 0:
+                break
+            
+            # Try with one fewer gold
+            current_gold_limit = result.total_gold_spent - 1
+        else:
+            # Could not reach target with this gold limit, previous result was the minimum
+            break
+    
+    # If we never found a valid path, return an empty result
+    if best_result is None:
+        final_profile = gd.king_progress_from_total_xp(
+            gd.total_xp_for_level(player_data.profile.king_level)
+            + player_data.profile.xp_into_level
+        )
+        return OptimizationResult(
+            actions=[],
+            total_xp_gained=0,
+            final_profile=PlayerProfile(
+                king_level=final_profile.level,
+                xp_into_level=final_profile.xp_into_level,
+            ),
+            final_gold=player_data.inventory.gold,
+            final_gems=player_data.inventory.gems,
+            total_gold_spent=0,
+            total_wild_cards_used={rarity: 0 for rarity in CARD_RARITIES},
+            total_gems_used=0,
+        )
+    
+    return best_result
 
 
 class MinCostToKingLevelOptimizer:
