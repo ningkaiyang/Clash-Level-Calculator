@@ -13,7 +13,7 @@
       <div>
         <p class="eyebrow">Clash Royale · Level 16 Update</p>
         <h1>Level-up planner, now on the web. <span aria-hidden="true">👑</span></h1>
-        <p class="lede">Run the optimizer with your own data or fetch a live snapshot from RoyaleAPI. Allow gems optionally and get a gold-first, blue-royal plan for maximum XP.</p>
+        <p class="lede">Choose your optimization mode below: minimize resources to reach your next king level, or maximize XP from your current resources.</p>
       </div>
       <div class="pill">Powered by Flask · Render-ready · Built by <b>ningkaiyang</b> (Discord, GitHub, CR)</div>
     </header>
@@ -30,7 +30,35 @@
     {% endif %}
 
     <section class="panel">
+      <!-- Mode Tabs -->
+      <div class="mode-tabs">
+        <button type="button" class="mode-tab {% if mode == 'min_cost' %}active{% endif %}" data-mode="min_cost">
+          <span class="tab-icon">💰</span>
+          <span class="tab-label">Min Cost to Next King</span>
+        </button>
+        <button type="button" class="mode-tab {% if mode == 'max_xp' %}active{% endif %}" data-mode="max_xp">
+          <span class="tab-icon">✨</span>
+          <span class="tab-label">Max XP from Resources</span>
+        </button>
+      </div>
+
+      <!-- Mode Descriptions -->
+      <div class="mode-description" id="desc-min_cost" {% if mode != 'min_cost' %}style="display: none;"{% endif %}>
+        <div class="how-to-use">
+          <h3>📋 How to use:</h3>
+          <p>Use this when you need to figure out the <strong>minimum efficient amount of resources</strong> you need to get to the next king level and the upgrade path. Perfect when you're planning ahead and want to know the cheapest route to unlock the next King Tower ability.</p>
+        </div>
+      </div>
+      <div class="mode-description" id="desc-max_xp" {% if mode != 'max_xp' %}style="display: none;"{% endif %}>
+        <div class="how-to-use">
+          <h3>📋 How to use:</h3>
+          <p>Use this when your deck is maxed, and you now need to figure out how you can <strong>farm the most amount of XP</strong> from your current resources to get as far into the next king levels as possible. Ideal for players who want to spend everything efficiently.</p>
+        </div>
+      </div>
+
       <form method="POST" class="form-grid">
+        <input type="hidden" name="mode" id="mode-input" value="{{ mode }}">
+        
         <div class="card">
           <div class="card-header">
             <h2>Fetch player snapshot</h2>
@@ -50,6 +78,16 @@
               <input type="text" name="gems" placeholder="800" value="{{ gems_input }}">
             </label>
           </div>
+          
+          <!-- Target Level (only for min cost mode) -->
+          <div class="target-level-section" id="target-level-section" {% if mode != 'min_cost' %}style="display: none;"{% endif %}>
+            <label class="field">
+              <span>Target King Level (optional)</span>
+              <input type="text" name="target_level" placeholder="Next level" value="{{ target_level_input }}">
+              <span class="field-hint">Leave blank for next level. Important milestones: {{ important_king_levels | join(', ') }}</span>
+            </label>
+          </div>
+          
           <div class="wild-grid">
             <label class="field-label">Wild Cards</label>
             <div class="wild-grid__inputs">
@@ -76,7 +114,10 @@
             </div>
           </div>
           <div class="actions">
-            <button type="submit" class="btn-clash">Fetch + optimize</button>
+            <button type="submit" class="btn-clash" id="submit-btn">
+              <span id="btn-text-min_cost" {% if mode != 'min_cost' %}style="display: none;"{% endif %}>Calculate minimum cost</span>
+              <span id="btn-text-max_xp" {% if mode != 'max_xp' %}style="display: none;"{% endif %}>Fetch + optimize XP</span>
+            </button>
           </div>
         </div>
 
@@ -93,6 +134,13 @@
             <input type="checkbox" name="infinite_gold" {% if settings.infinite_gold %}checked{% endif %}>
             <span>Ignore gold limits (card bottleneck mode)</span>
           </label>
+          
+          {% if player_data %}
+          <div class="player-info">
+            <p class="player-info-label">Current Status</p>
+            <p class="player-info-value">King Level {{ player_data.profile.king_level }} (+{{ "{:,}".format(player_data.profile.xp_into_level) }} XP)</p>
+          </div>
+          {% endif %}
         </div>
       </form>
     </section>
@@ -102,7 +150,13 @@
       <header class="results-header">
         <div>
           <h2>Plan summary</h2>
-          <p class="hint">Based on the options you selected above.</p>
+          <p class="hint">
+            {% if mode == 'min_cost' %}
+            Minimum cost path to reach King Level {{ result.final_profile.king_level }}.
+            {% else %}
+            Maximum XP optimization based on your current resources.
+            {% endif %}
+          </p>
         </div>
         <div class="pill pill--count">{{ result.actions|length }} upgrades planned</div>
       </header>
@@ -143,7 +197,7 @@
               <th>Wild</th>
               <th>Gems</th>
               <th>XP</th>
-              <th>Gold/XP</th>
+              <th>Cost/XP</th>
             </tr>
           </thead>
           <tbody>
@@ -164,10 +218,42 @@
         </table>
       </div>
       {% else %}
-      <p class="empty">No upgrades available for this configuration.</p>
+      <p class="empty">No upgrades available for this configuration. {% if mode == 'min_cost' %}You may already be at the target king level!{% endif %}</p>
       {% endif %}
     </section>
     {% endif %}
   </main>
+
+  <script>
+    // Mode tab switching
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        const mode = this.dataset.mode;
+        
+        // Update active tab
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Update hidden input
+        document.getElementById('mode-input').value = mode;
+        
+        // Toggle descriptions
+        document.querySelectorAll('.mode-description').forEach(desc => desc.style.display = 'none');
+        document.getElementById('desc-' + mode).style.display = 'block';
+        
+        // Toggle target level section
+        const targetSection = document.getElementById('target-level-section');
+        if (mode === 'min_cost') {
+          targetSection.style.display = 'block';
+        } else {
+          targetSection.style.display = 'none';
+        }
+        
+        // Toggle button text
+        document.querySelectorAll('[id^="btn-text-"]').forEach(span => span.style.display = 'none');
+        document.getElementById('btn-text-' + mode).style.display = 'inline';
+      });
+    });
+  </script>
 </body>
 </html>

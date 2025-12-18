@@ -68,15 +68,15 @@ def run_scenarios(player_data: PlayerData) -> List[Tuple[str, OptimizationResult
     scenarios: List[Tuple[str, OptimizationSettings]] = [
         (
             "All Resources (Gold + Gems + Cards) - Note: Gem Costs Are Estimates!",
-            OptimizationSettings(use_gems=True, keep_wild_card_buffer=False),
+            OptimizationSettings(use_gems=True),
         ),
         (
             "Gold + Cards Only",
-            OptimizationSettings(use_gems=False, keep_wild_card_buffer=False),
+            OptimizationSettings(use_gems=False),
         ),
         (
             "Card Bottleneck (Infinite Gold)",
-            OptimizationSettings(use_gems=False, infinite_gold=True, keep_wild_card_buffer=False),
+            OptimizationSettings(use_gems=False, infinite_gold=True),
         ),
     ]
 

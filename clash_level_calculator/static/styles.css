@@ -118,6 +118,117 @@ h1, h2, h3 {
 .panel.error h2 { color: #7f1d1d; margin-bottom: 8px; }
 .panel.error ul { margin: 0; padding-left: 20px; }
 
+/* Mode Tabs */
+.mode-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.mode-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.mode-tab:hover {
+  border-color: var(--accent);
+  background: #f8fafc;
+}
+
+.mode-tab.active {
+  background: linear-gradient(135deg, #3a7cf0 0%, #1e5bb8 100%);
+  border-color: #1e5bb8;
+  color: white;
+  box-shadow: 0 4px 12px rgba(58, 124, 240, 0.3);
+}
+
+.mode-tab .tab-icon {
+  font-size: 24px;
+}
+
+.mode-tab .tab-label {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Mode Description / How to Use */
+.mode-description {
+  margin-bottom: 20px;
+}
+
+.how-to-use {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.how-to-use h3 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #92400e;
+  margin: 0 0 8px 0;
+}
+
+.how-to-use p {
+  font-size: 14px;
+  color: #78350f;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.how-to-use strong {
+  color: #92400e;
+}
+
+/* Target Level Section */
+.target-level-section {
+  margin-top: 8px;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Player Info Display */
+.player-info {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.player-info-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin: 0 0 4px 0;
+}
+
+.player-info-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+}
+
 /* Forms */
 .form-grid {
   display: grid;
@@ -339,4 +450,6 @@ tr.row-champion { border-left: 4px solid var(--champion); }
   .hero h1 { font-size: 32px; }
   .form-grid { grid-template-columns: 1fr; }
   .field-row { flex-direction: column; }
+  .mode-tabs { flex-direction: column; }
+  .mode-tab { justify-content: flex-start; }
 }

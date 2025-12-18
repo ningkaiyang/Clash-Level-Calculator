@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 from flask import Flask, render_template, request
@@ -11,8 +11,9 @@ from pydantic import ValidationError
 
 from .api_adapter import player_data_from_snapshot
 from .clients import RoyaleAPIClient, RoyaleAPIError
-from .models import OptimizationResult, OptimizationSettings, PlayerData
-from .optimizer import Level16Optimizer
+from .constants import IMPORTANT_KING_LEVELS
+from .models import OptimizationMode, OptimizationResult, OptimizationSettings, PlayerData
+from .optimizer import Level16Optimizer, MinCostToKingLevelOptimizer
 
 
 load_dotenv()
@@ -27,9 +28,28 @@ def _parse_settings(form_data: Dict[str, str]) -> OptimizationSettings:
     return OptimizationSettings(
         use_gems=_flag("use_gems"),
         infinite_gold=_flag("infinite_gold"),
-        # Buffer disabled so user-entered Wild Cards are used as-is.
-        keep_wild_card_buffer=False,
     )
+
+
+def _parse_mode(form_data: Dict[str, str]) -> OptimizationMode:
+    """Parse the optimization mode from form data."""
+    mode_value = form_data.get("mode", "min_cost")
+    if mode_value == "max_xp":
+        return OptimizationMode.MAX_XP_FROM_RESOURCES
+    return OptimizationMode.MIN_COST_TO_NEXT_KING  # Default
+
+
+def _parse_target_level(form_data: Dict[str, str], current_king_level: int) -> Optional[int]:
+    """Parse the target king level from form data."""
+    target_str = form_data.get("target_level", "").strip()
+    if target_str:
+        try:
+            target = int(target_str)
+            if target > current_king_level:
+                return target
+        except ValueError:
+            pass
+    return None  # Use default (next level)
 
 
 # JSON paste support removed: web UI only allows RoyaleAPI lookup for live data
@@ -50,13 +70,26 @@ def _player_data_from_api(
     return player_data_from_snapshot(snapshot, gold=gold, gems=gems, wild_cards=wild_cards)
 
 
-def _run_optimizer(player_data: PlayerData, settings: OptimizationSettings) -> OptimizationResult:
-    optimizer = Level16Optimizer(player_data, settings=settings)
+def _run_optimizer(
+    player_data: PlayerData,
+    settings: OptimizationSettings,
+    mode: OptimizationMode,
+    target_level: Optional[int] = None,
+) -> OptimizationResult:
+    """Run the appropriate optimizer based on mode."""
+    if mode == OptimizationMode.MIN_COST_TO_NEXT_KING:
+        optimizer = MinCostToKingLevelOptimizer(
+            player_data,
+            settings=settings,
+            target_king_level=target_level,
+        )
+    else:
+        optimizer = Level16Optimizer(player_data, settings=settings)
     return optimizer.generate_plan()
 
 
 def _default_settings() -> OptimizationSettings:
-    return OptimizationSettings(use_gems=False, infinite_gold=False, keep_wild_card_buffer=False)
+    return OptimizationSettings(use_gems=False, infinite_gold=False)
 
 
 app = Flask(__name__)
@@ -74,9 +107,14 @@ def index():  # type: ignore[override]
     wild_cards_input = {k: "" for k in ["common", "rare", "epic", "legendary", "champion"]}
     source = "api"
     settings = _default_settings()
+    mode = OptimizationMode.MIN_COST_TO_NEXT_KING  # Default mode
+    target_level_input = request.form.get("target_level", "")
+    current_king_level = 1
+    player_data: PlayerData | None = None
 
     if request.method == "POST":
         settings = _parse_settings(request.form)
+        mode = _parse_mode(request.form)
         wild_cards_input = {
             "common": request.form.get("wild_common", ""),
             "rare": request.form.get("wild_rare", ""),
@@ -95,8 +133,12 @@ def index():  # type: ignore[override]
                     wild_cards_values[key.capitalize()] = 0
 
             player_data = _player_data_from_api(request.form, gold, gems, wild_cards_values)
+            current_king_level = player_data.profile.king_level
+            
+            # Parse target level for min cost mode
+            target_level = _parse_target_level(request.form, current_king_level)
 
-            result = _run_optimizer(player_data, settings)
+            result = _run_optimizer(player_data, settings, mode, target_level)
             # Autofill inputs with parsed values
             gold_input = str(gold)
             gems_input = str(gems)
@@ -112,6 +154,11 @@ def index():  # type: ignore[override]
         settings=settings,
         errors=errors,
         result=result,
+        mode=mode.value,
+        target_level_input=target_level_input,
+        current_king_level=current_king_level,
+        important_king_levels=IMPORTANT_KING_LEVELS,
+        player_data=player_data,
     )
 
 

@@ -21,11 +21,6 @@ def parse_args() -> argparse.Namespace:
         help="Ignore gold costs and maximize XP per card (materials bottleneck mode)",
     )
     parser.add_argument(
-        "--no-wild-buffer",
-        action="store_true",
-        help="Spend all available wild cards instead of reserving 10%%",
-    )
-    parser.add_argument(
         "--gem-gold-ratio",
         type=float,
         default=125.0,
@@ -42,7 +37,6 @@ def main() -> None:
     settings = OptimizationSettings(
         use_gems=args.use_gems,
         infinite_gold=args.infinite_gold,
-        keep_wild_card_buffer=not args.no_wild_buffer,
     )
 
     optimizer = Level16Optimizer(player_data, settings=settings)

@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 CARD_LEVEL_CAP = 16
-WILD_CARD_BUFFER_RATIO = 0.10
+
+# Important King Tower level milestones (unlock new abilities/features)
+IMPORTANT_KING_LEVELS: List[int] = [
+    2, 3, 5, 7, 10, 14, 18, 22, 26, 30, 34, 38, 42, 54, 75
+]
 
 CARD_RARITIES: List[str] = [
     "Common",

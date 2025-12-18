@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
+
+
+class OptimizationMode(str, Enum):
+    """Optimization mode selection."""
+    MIN_COST_TO_NEXT_KING = "min_cost"  # Minimize resources to reach next king level
+    MAX_XP_FROM_RESOURCES = "max_xp"    # Maximize XP from current resources
 
 
 class Card(BaseModel):
@@ -37,7 +44,6 @@ class PlayerData(BaseModel):
 class OptimizationSettings(BaseModel):
     use_gems: bool = False
     infinite_gold: bool = False
-    keep_wild_card_buffer: bool = True
 
 
 class UpgradeAction(BaseModel):
