@@ -13,7 +13,7 @@ from .api_adapter import player_data_from_snapshot
 from .clients import RoyaleAPIClient, RoyaleAPIError
 from .constants import IMPORTANT_KING_LEVELS
 from .models import OptimizationMode, OptimizationResult, OptimizationSettings, PlayerData
-from .optimizer import Level16Optimizer, MinCostToKingLevelOptimizer
+from .optimizer import Level16Optimizer, find_min_gem_path, find_min_gold_path
 
 
 load_dotenv()
@@ -39,8 +39,17 @@ def _parse_mode(form_data: Dict[str, str]) -> OptimizationMode:
     return OptimizationMode.MIN_COST_TO_NEXT_KING  # Default
 
 
-def _parse_target_level(form_data: Dict[str, str], current_king_level: int) -> Optional[int]:
-    """Parse the target king level from form data."""
+def _get_next_important_king_level(current_level: int) -> int:
+    """Get the next important king level milestone."""
+    for milestone in IMPORTANT_KING_LEVELS:
+        if milestone > current_level:
+            return milestone
+    # If past all milestones, just return next level
+    return current_level + 1
+
+
+def _parse_target_level(form_data: Dict[str, str], current_king_level: int) -> int:
+    """Parse the target king level from form data, defaulting to next important level."""
     target_str = form_data.get("target_level", "").strip()
     if target_str:
         try:
@@ -49,7 +58,8 @@ def _parse_target_level(form_data: Dict[str, str], current_king_level: int) -> O
                 return target
         except ValueError:
             pass
-    return None  # Use default (next level)
+    # Default to next important king level
+    return _get_next_important_king_level(current_king_level)
 
 
 # JSON paste support removed: web UI only allows RoyaleAPI lookup for live data
@@ -70,21 +80,24 @@ def _player_data_from_api(
     return player_data_from_snapshot(snapshot, gold=gold, gems=gems, wild_cards=wild_cards)
 
 
-def _run_optimizer(
+def _run_min_cost_optimizer(
+    player_data: PlayerData,
+    target_level: int,
+    minimize_gold: bool = False,
+) -> OptimizationResult:
+    """Run the min cost optimizer with either gold or gem minimization."""
+    if minimize_gold:
+        return find_min_gold_path(player_data, target_level)
+    else:
+        return find_min_gem_path(player_data, target_level)
+
+
+def _run_max_xp_optimizer(
     player_data: PlayerData,
     settings: OptimizationSettings,
-    mode: OptimizationMode,
-    target_level: Optional[int] = None,
 ) -> OptimizationResult:
-    """Run the appropriate optimizer based on mode."""
-    if mode == OptimizationMode.MIN_COST_TO_NEXT_KING:
-        optimizer = MinCostToKingLevelOptimizer(
-            player_data,
-            settings=settings,
-            target_king_level=target_level,
-        )
-    else:
-        optimizer = Level16Optimizer(player_data, settings=settings)
+    """Run the max XP optimizer."""
+    optimizer = Level16Optimizer(player_data, settings=settings)
     return optimizer.generate_plan()
 
 
@@ -105,16 +118,18 @@ def index():  # type: ignore[override]
     gold_input = request.form.get("gold", "")
     gems_input = request.form.get("gems", "")
     wild_cards_input = {k: "" for k in ["common", "rare", "epic", "legendary", "champion"]}
-    source = "api"
     settings = _default_settings()
     mode = OptimizationMode.MIN_COST_TO_NEXT_KING  # Default mode
     target_level_input = request.form.get("target_level", "")
     current_king_level = 1
+    next_important_level = _get_next_important_king_level(current_king_level)
     player_data: PlayerData | None = None
+    minimize_gold = False  # Default: minimize gems
 
     if request.method == "POST":
         settings = _parse_settings(request.form)
         mode = _parse_mode(request.form)
+        minimize_gold = request.form.get("minimize_gold") == "on"
         wild_cards_input = {
             "common": request.form.get("wild_common", ""),
             "rare": request.form.get("wild_rare", ""),
@@ -134,14 +149,18 @@ def index():  # type: ignore[override]
 
             player_data = _player_data_from_api(request.form, gold, gems, wild_cards_values)
             current_king_level = player_data.profile.king_level
+            next_important_level = _get_next_important_king_level(current_king_level)
             
-            # Parse target level for min cost mode
-            target_level = _parse_target_level(request.form, current_king_level)
-
-            result = _run_optimizer(player_data, settings, mode, target_level)
-            # Autofill inputs with parsed values
-            gold_input = str(gold)
-            gems_input = str(gems)
+            if mode == OptimizationMode.MIN_COST_TO_NEXT_KING:
+                # Parse target level for min cost mode
+                target_level = _parse_target_level(request.form, current_king_level)
+                result = _run_min_cost_optimizer(player_data, target_level, minimize_gold)
+            else:
+                # Max XP mode uses user-provided gold/gems
+                result = _run_max_xp_optimizer(player_data, settings)
+                # Autofill inputs with parsed values
+                gold_input = str(gold)
+                gems_input = str(gems)
         except (ValueError, ValidationError, RoyaleAPIError) as exc:
             errors.append(str(exc))
 
@@ -157,8 +176,10 @@ def index():  # type: ignore[override]
         mode=mode.value,
         target_level_input=target_level_input,
         current_king_level=current_king_level,
+        next_important_level=next_important_level,
         important_king_levels=IMPORTANT_KING_LEVELS,
         player_data=player_data,
+        minimize_gold=minimize_gold,
     )
 
 

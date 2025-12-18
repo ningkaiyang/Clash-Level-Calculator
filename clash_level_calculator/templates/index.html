@@ -68,7 +68,9 @@
             <span>Player tag</span>
             <input type="text" name="player_tag" placeholder="#G2VV9802" value="{{ player_tag }}" autocomplete="off">
           </label>
-          <div class="field-row">
+          
+          <!-- Gold/Gems fields (only for max XP mode) -->
+          <div class="field-row" id="gold-gems-section" {% if mode == 'min_cost' %}style="display: none;"{% endif %}>
             <label class="field">
               <span>Available gold</span>
               <input type="text" name="gold" placeholder="450000" value="{{ gold_input }}">
@@ -82,9 +84,9 @@
           <!-- Target Level (only for min cost mode) -->
           <div class="target-level-section" id="target-level-section" {% if mode != 'min_cost' %}style="display: none;"{% endif %}>
             <label class="field">
-              <span>Target King Level (optional)</span>
-              <input type="text" name="target_level" placeholder="Next level" value="{{ target_level_input }}">
-              <span class="field-hint">Leave blank for next level. Important milestones: {{ important_king_levels | join(', ') }}</span>
+              <span>Target King Level</span>
+              <input type="text" name="target_level" placeholder="Next King Tower Level" value="{{ target_level_input }}">
+              <span class="field-hint">Leave blank for next King Tower unlock (Level {{ next_important_level }}). Milestones: {{ important_king_levels | join(', ') }}</span>
             </label>
           </div>
           
@@ -121,7 +123,28 @@
           </div>
         </div>
 
-        <div class="card">
+        <!-- Settings card for min cost mode -->
+        <div class="card" id="settings-min_cost" {% if mode != 'min_cost' %}style="display: none;"{% endif %}>
+          <div class="card-header">
+            <h2>Optimization settings</h2>
+            <p class="hint">Choose what resource to minimize.</p>
+          </div>
+          <label class="checkbox">
+            <input type="checkbox" name="minimize_gold" {% if minimize_gold %}checked{% endif %}>
+            <span>Minimize Gold instead of Gems</span>
+          </label>
+          <p class="setting-note">By default, the optimizer finds the path with the <strong>minimum gems</strong> needed. Check this to minimize gold instead (may require more gems).</p>
+          
+          {% if player_data %}
+          <div class="player-info">
+            <p class="player-info-label">Current Status</p>
+            <p class="player-info-value">King Level {{ player_data.profile.king_level }} (+{{ "{:,}".format(player_data.profile.xp_into_level) }} XP)</p>
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Settings card for max XP mode -->
+        <div class="card" id="settings-max_xp" {% if mode != 'max_xp' %}style="display: none;"{% endif %}>
           <div class="card-header">
             <h2>Optimizer settings</h2>
             <p class="hint">Toggle how aggressive the plan should be.</p>
@@ -241,13 +264,25 @@
         document.querySelectorAll('.mode-description').forEach(desc => desc.style.display = 'none');
         document.getElementById('desc-' + mode).style.display = 'block';
         
-        // Toggle target level section
+        // Toggle gold/gems section (only for max_xp mode)
+        const goldGemsSection = document.getElementById('gold-gems-section');
+        if (mode === 'max_xp') {
+          goldGemsSection.style.display = 'flex';
+        } else {
+          goldGemsSection.style.display = 'none';
+        }
+        
+        // Toggle target level section (only for min_cost mode)
         const targetSection = document.getElementById('target-level-section');
         if (mode === 'min_cost') {
           targetSection.style.display = 'block';
         } else {
           targetSection.style.display = 'none';
         }
+        
+        // Toggle settings cards
+        document.getElementById('settings-min_cost').style.display = mode === 'min_cost' ? 'flex' : 'none';
+        document.getElementById('settings-max_xp').style.display = mode === 'max_xp' ? 'flex' : 'none';
         
         // Toggle button text
         document.querySelectorAll('[id^="btn-text-"]').forEach(span => span.style.display = 'none');
