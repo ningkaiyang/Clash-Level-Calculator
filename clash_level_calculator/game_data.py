@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 from dataclasses import dataclass
 from typing import Dict, Optional
 
@@ -38,6 +39,7 @@ class GameData:
         self.gem_values = GEM_CARD_VALUES
         self.efficiency_overrides = EFFICIENCY_OVERRIDES
         self.king_levels = KING_XP_TABLE
+        self._king_cumulative_xp = [row["cumulative"] for row in self.king_levels]
         self._cumulative_lookup = {
             row["level"]: row["cumulative"] for row in self.king_levels if row["cumulative"] is not None
         }
@@ -63,12 +65,8 @@ class GameData:
         return self._cumulative_lookup.get(level, 0)
 
     def king_progress_from_total_xp(self, total_xp: int) -> KingLevelProgress:
-        current_row = self.king_levels[0]
-        for row in self.king_levels:
-            if total_xp >= row["cumulative"]:
-                current_row = row
-            else:
-                break
+        idx = max(0, bisect.bisect_right(self._king_cumulative_xp, total_xp) - 1)
+        current_row = self.king_levels[idx]
 
         xp_to_next = current_row["xp_to_next"] or 0
         level = current_row["level"]
