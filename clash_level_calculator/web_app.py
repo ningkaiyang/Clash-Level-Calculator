@@ -105,6 +105,37 @@ def _default_settings() -> OptimizationSettings:
     return OptimizationSettings(use_gems=False, infinite_gold=False)
 
 
+def _parse_int(value: str) -> int:
+    """Parse an integer from a string, handling commas and empty values."""
+    clean_value = value.strip().replace(",", "")
+    if not clean_value:
+        return 0
+    return int(clean_value)
+
+
+def _extract_wild_cards_input(form_data: Dict[str, str]) -> Dict[str, str]:
+    """Extract raw wild card string values from form data."""
+    return {
+        "common": form_data.get("wild_common", ""),
+        "rare": form_data.get("wild_rare", ""),
+        "epic": form_data.get("wild_epic", ""),
+        "legendary": form_data.get("wild_legendary", ""),
+        "champion": form_data.get("wild_champion", ""),
+    }
+
+
+def _parse_wild_cards(form_data: Dict[str, str]) -> Dict[str, int]:
+    """Parse wild card values into a dictionary of capitalized rarities and integers."""
+    raw_input = _extract_wild_cards_input(form_data)
+    wild_cards_values: Dict[str, int] = {}
+    for key, value in raw_input.items():
+        try:
+            wild_cards_values[key.capitalize()] = _parse_int(value)
+        except ValueError:
+            wild_cards_values[key.capitalize()] = 0
+    return wild_cards_values
+
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "change-me")
 
@@ -117,7 +148,7 @@ def index():  # type: ignore[override]
     player_tag = request.form.get("player_tag", "")
     gold_input = request.form.get("gold", "")
     gems_input = request.form.get("gems", "")
-    wild_cards_input = {k: "" for k in ["common", "rare", "epic", "legendary", "champion"]}
+    wild_cards_input = _extract_wild_cards_input(request.form)
     settings = _default_settings()
     mode = OptimizationMode.MIN_COST_TO_NEXT_KING  # Default mode
     target_level_input = request.form.get("target_level", "")
@@ -130,22 +161,11 @@ def index():  # type: ignore[override]
         settings = _parse_settings(request.form)
         mode = _parse_mode(request.form)
         minimize_gold = request.form.get("minimize_gold") == "on"
-        wild_cards_input = {
-            "common": request.form.get("wild_common", ""),
-            "rare": request.form.get("wild_rare", ""),
-            "epic": request.form.get("wild_epic", ""),
-            "legendary": request.form.get("wild_legendary", ""),
-            "champion": request.form.get("wild_champion", ""),
-        }
+
         try:
-            gold = int(gold_input.replace(",", "")) if gold_input.strip() else 0
-            gems = int(gems_input.replace(",", "")) if gems_input.strip() else 0
-            wild_cards_values: Dict[str, int] = {}
-            for key, value in wild_cards_input.items():
-                try:
-                    wild_cards_values[key.capitalize()] = int(value.replace(",", "")) if value.strip() else 0
-                except ValueError:
-                    wild_cards_values[key.capitalize()] = 0
+            gold = _parse_int(gold_input)
+            gems = _parse_int(gems_input)
+            wild_cards_values = _parse_wild_cards(request.form)
 
             player_data = _player_data_from_api(request.form, gold, gems, wild_cards_values)
             current_king_level = player_data.profile.king_level
