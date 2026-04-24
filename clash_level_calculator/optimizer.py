@@ -34,7 +34,9 @@ class UpgradeCandidate:
     material_efficiency: float
 
 
-class Level16Optimizer:
+
+class BaseOptimizer:
+    """Base class for optimizers containing shared candidate building and committing logic."""
     def __init__(
         self,
         player_data: PlayerData,
@@ -62,44 +64,8 @@ class Level16Optimizer:
         self._wild_usage: Dict[str, int] = {rarity: 0 for rarity in CARD_RARITIES}
         self._total_gems_used = 0
 
-    def generate_plan(self) -> OptimizationResult:
-        while True:
-            candidate = self._select_candidate()
-            if candidate is None:
-                break
-            self._commit_candidate(candidate)
-
-        final_profile = self.game_data.king_progress_from_total_xp(self._xp_total)
-        return OptimizationResult(
-            actions=self.actions,
-            total_xp_gained=sum(action.xp_gained for action in self.actions),
-            final_profile=PlayerProfile(
-                king_level=final_profile.level,
-                xp_into_level=final_profile.xp_into_level,
-            ),
-            final_gold=self.inventory.gold,
-            final_gems=self.inventory.gems,
-            total_gold_spent=self._gold_spent,
-            total_wild_cards_used=self._wild_usage,
-            total_gems_used=self._total_gems_used,
-        )
-
-    def _select_candidate(self) -> Optional[UpgradeCandidate]:
-        best: Optional[UpgradeCandidate] = None
-        for index, card in enumerate(self.cards):
-            candidate = self._build_candidate(index, card)
-            if candidate is None:
-                continue
-            if best is None:
-                best = candidate
-                continue
-            if candidate.efficiency_ratio < best.efficiency_ratio:
-                best = candidate
-            elif candidate.efficiency_ratio == best.efficiency_ratio and candidate.xp_gained > best.xp_gained:
-                best = candidate
-        return best
-
     def _build_candidate(self, index: int, card: Card) -> Optional[UpgradeCandidate]:
+        """Build an upgrade candidate for a card if affordable."""
         next_level = card.next_level()
         if next_level is None:
             return None
@@ -153,6 +119,7 @@ class Level16Optimizer:
         )
 
     def _available_wild(self, rarity: str) -> int:
+        """All wild cards are available (no buffer)."""
         return max(0, self.inventory.wild_cards.get(rarity, 0))
 
     def _calculate_efficiency(
@@ -163,15 +130,10 @@ class Level16Optimizer:
         cards_required: int,
         gems_used: int,
     ) -> float:
-        override = self.game_data.get_efficiency_override(target_level)
-        if override is not None:
-            return override
-
-        denominator = xp_gain or 1
-        # Gems are a separate currency and not converted to gold; do not penalize gem usage scaled with gold, just in general.
-        return (gold_cost + gems_used) / denominator
+        raise NotImplementedError("Subclasses must implement _calculate_efficiency")
 
     def _commit_candidate(self, candidate: UpgradeCandidate) -> None:
+        """Apply the upgrade to the state."""
         card = self.cards[candidate.index]
         card.count -= candidate.cards_used
         card.level = candidate.to_level
@@ -201,6 +163,69 @@ class Level16Optimizer:
                 material_efficiency=candidate.material_efficiency,
             )
         )
+
+class Level16Optimizer(BaseOptimizer):
+    def __init__(
+        self,
+        player_data: PlayerData,
+        settings: Optional[OptimizationSettings] = None,
+        game_data: Optional[GameData] = None,
+    ) -> None:
+        super().__init__(player_data, settings, game_data)
+
+    def generate_plan(self) -> OptimizationResult:
+        while True:
+            candidate = self._select_candidate()
+            if candidate is None:
+                break
+            self._commit_candidate(candidate)
+
+        final_profile = self.game_data.king_progress_from_total_xp(self._xp_total)
+        return OptimizationResult(
+            actions=self.actions,
+            total_xp_gained=sum(action.xp_gained for action in self.actions),
+            final_profile=PlayerProfile(
+                king_level=final_profile.level,
+                xp_into_level=final_profile.xp_into_level,
+            ),
+            final_gold=self.inventory.gold,
+            final_gems=self.inventory.gems,
+            total_gold_spent=self._gold_spent,
+            total_wild_cards_used=self._wild_usage,
+            total_gems_used=self._total_gems_used,
+        )
+
+    def _select_candidate(self) -> Optional[UpgradeCandidate]:
+        best: Optional[UpgradeCandidate] = None
+        for index, card in enumerate(self.cards):
+            candidate = self._build_candidate(index, card)
+            if candidate is None:
+                continue
+            if best is None:
+                best = candidate
+                continue
+            if candidate.efficiency_ratio < best.efficiency_ratio:
+                best = candidate
+            elif candidate.efficiency_ratio == best.efficiency_ratio and candidate.xp_gained > best.xp_gained:
+                best = candidate
+        return best
+
+    def _calculate_efficiency(
+        self,
+        target_level: int,
+        gold_cost: int,
+        xp_gain: int,
+        cards_required: int,
+        gems_used: int,
+    ) -> float:
+        override = self.game_data.get_efficiency_override(target_level)
+        if override is not None:
+            return override
+
+        denominator = xp_gain or 1
+        # Gems are a separate currency and not converted to gold; do not penalize gem usage scaled with gold, just in general.
+        return (gold_cost + gems_used) / denominator
+
 
 
 def find_min_gem_path(
@@ -345,7 +370,7 @@ def find_min_gold_path(
     return best_result
 
 
-class MinCostToKingLevelOptimizer:
+class MinCostToKingLevelOptimizer(BaseOptimizer):
     """
     Optimizer that finds the minimum-cost path to reach the next king level.
     
@@ -360,26 +385,8 @@ class MinCostToKingLevelOptimizer:
         game_data: Optional[GameData] = None,
         target_king_level: Optional[int] = None,
     ) -> None:
-        self.player_data = player_data
-        self.settings = settings or OptimizationSettings()
-        self.game_data = game_data or GameData()
-
-        self.inventory: Inventory = player_data.inventory.model_copy(deep=True)
-        for rarity in CARD_RARITIES:
-            self.inventory.wild_cards.setdefault(rarity, 0)
-
-        self.cards: List[Card] = [card.model_copy(deep=True) for card in player_data.cards]
-        self.actions: List[UpgradeAction] = []
-        self._initial_gold = self.inventory.gold
-        self._initial_gems = self.inventory.gems
-        self._gold_spent = 0
-        
-        current_total_xp = (
-            self.game_data.total_xp_for_level(player_data.profile.king_level)
-            + player_data.profile.xp_into_level
-        )
-        self._starting_xp = current_total_xp
-        self._xp_total = current_total_xp
+        super().__init__(player_data, settings, game_data)
+        self._starting_xp = self._xp_total
 
         # Determine target king level (next level by default)
         if target_king_level is not None:
@@ -389,10 +396,7 @@ class MinCostToKingLevelOptimizer:
         
         # Calculate XP needed to reach target
         self._target_xp = self.game_data.total_xp_for_level(self._target_level)
-        self._xp_needed = max(0, self._target_xp - current_total_xp)
-
-        self._wild_usage: Dict[str, int] = {rarity: 0 for rarity in CARD_RARITIES}
-        self._total_gems_used = 0
+        self._xp_needed = max(0, self._target_xp - self._xp_total)
 
     def generate_plan(self) -> OptimizationResult:
         """
@@ -473,66 +477,14 @@ class MinCostToKingLevelOptimizer:
                             best = candidate
         return best
 
-    def _build_candidate(self, index: int, card: Card) -> Optional[UpgradeCandidate]:
-        """Build an upgrade candidate for a card if affordable."""
-        next_level = card.next_level()
-        if next_level is None:
-            return None
-
-        cards_required = self.game_data.get_material_requirement(card.rarity, next_level)
-        gold_cost = self.game_data.get_gold_cost(next_level)
-        xp_gain = self.game_data.get_xp_reward(next_level)
-
-        if cards_required is None or gold_cost is None or xp_gain is None:
-            return None
-
-        cards_used = min(card.count, cards_required)
-        remaining = cards_required - cards_used
-
-        wild_available = self._available_wild(card.rarity)
-        wild_used = min(remaining, wild_available)
-        remaining -= wild_used
-
-        gems_used = 0
-        if remaining > 0:
-            if not self.settings.use_gems:
-                return None
-            gem_cost_per_card = self.game_data.gem_value_for_rarity(card.rarity)
-            gems_used = int(round(remaining * gem_cost_per_card))
-            remaining = 0
-
-        if remaining > 0:
-            return None
-
-        if not self.settings.infinite_gold and gold_cost > self.inventory.gold:
-            return None
-        if gems_used > self.inventory.gems:
-            return None
-
-        # Cost efficiency: total cost per XP (for minimization)
-        efficiency_ratio = self._calculate_cost_efficiency(gold_cost, gems_used, xp_gain)
-        material_efficiency = xp_gain / cards_required if cards_required else 0
-
-        return UpgradeCandidate(
-            index=index,
-            card=card,
-            from_level=card.level,
-            to_level=next_level,
-            gold_cost=gold_cost,
-            cards_required=cards_required,
-            cards_used=cards_used,
-            wild_cards_used=wild_used,
-            gems_used=gems_used,
-            xp_gained=xp_gain,
-            efficiency_ratio=efficiency_ratio,
-            material_efficiency=material_efficiency,
-        )
-
-    def _available_wild(self, rarity: str) -> int:
-        """All wild cards are available (no buffer)."""
-        return max(0, self.inventory.wild_cards.get(rarity, 0))
-
-    def _calculate_cost_efficiency(self, gold_cost: int, gems_used: int, xp_gain: int) -> float:
+    def _calculate_efficiency(
+        self,
+        target_level: int,
+        gold_cost: int,
+        xp_gain: int,
+        cards_required: int,
+        gems_used: int,
+    ) -> float:
         """
         Calculate cost efficiency for minimization mode.
         
@@ -542,35 +494,3 @@ class MinCostToKingLevelOptimizer:
         denominator = xp_gain or 1
         # For minimization, we want raw cost per XP without overrides
         return (gold_cost + gems_used) / denominator
-
-    def _commit_candidate(self, candidate: UpgradeCandidate) -> None:
-        """Apply the upgrade to the state."""
-        card = self.cards[candidate.index]
-        card.count -= candidate.cards_used
-        card.level = candidate.to_level
-
-        if not self.settings.infinite_gold:
-            self.inventory.gold -= candidate.gold_cost
-        self.inventory.gems -= candidate.gems_used
-        self.inventory.wild_cards[card.rarity] -= candidate.wild_cards_used
-        self._wild_usage[card.rarity] += candidate.wild_cards_used
-        self._total_gems_used += candidate.gems_used
-        self._gold_spent += candidate.gold_cost
-
-        self._xp_total += candidate.xp_gained
-
-        self.actions.append(
-            UpgradeAction(
-                card_name=card.name,
-                rarity=card.rarity,
-                from_level=candidate.from_level,
-                to_level=candidate.to_level,
-                gold_cost=candidate.gold_cost,
-                card_cost=candidate.cards_used,
-                wild_cards_used=candidate.wild_cards_used,
-                gems_used=candidate.gems_used,
-                xp_gained=candidate.xp_gained,
-                efficiency_ratio=candidate.efficiency_ratio,
-                material_efficiency=candidate.material_efficiency,
-            )
-        )
